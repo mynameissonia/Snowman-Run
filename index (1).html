@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Snowman Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --dusk-900:#0f1b33;
+    --dusk-800:#182a4a;
+    --dusk-700:#233761;
+    --ice-100:#eef6ff;
+    --ice-300:#bfe1f5;
+    --ice-500:#7ec8e3;
+    --ember-500:#ff8c42;
+    --ember-600:#ec6f22;
+    --line:#33456d;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(ellipse at 20% -10%, #24406e 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 0%, #1c3358 0%, transparent 45%),
+      var(--dusk-900);
+    color:var(--ice-100);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .stars{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 60% 30%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 90% 70%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 45% 85%, rgba(255,255,255,.3), transparent);
+    background-repeat:no-repeat;
+  }
+
+  header{
+    width:100%;
+    max-width:760px;
+    padding:48px 20px 8px;
+    text-align:left;
+    position:relative;
+    z-index:1;
+  }
+
+  .eyebrow-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+
+  h1{
+    font-family:'Fredoka', sans-serif;
+    font-weight:700;
+    font-size:clamp(34px, 6vw, 52px);
+    line-height:1;
+    margin:0;
+    letter-spacing:-0.01em;
+    color:var(--ice-100);
+  }
+
+  h1 span{
+    color:var(--ember-500);
+  }
+
+  .tagline{
+    margin:10px 0 0;
+    max-width:46ch;
+    color:var(--ice-300);
+    font-size:16px;
+    line-height:1.5;
+  }
+
+  .high-score-chip{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--dusk-900);
+    background:var(--ice-300);
+    padding:8px 14px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+
+  main{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:760px;
+    padding:20px;
+  }
+
+  #stage{
+    position:relative;
+    width:100%;
+    aspect-ratio:2 / 1;
+    border-radius:18px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.02);
+    background:#0c1730;
+  }
+
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    touch-action:none;
+  }
+
+  #hud{
+    position:absolute;
+    top:14px;
+    right:18px;
+    display:flex;
+    gap:18px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--ice-100);
+    text-shadow:0 2px 8px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+
+  #hud .best{ color:var(--ice-300); opacity:.85; }
+
+  #overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:rgba(10,18,38,.72);
+    backdrop-filter: blur(3px);
+    gap:6px;
+    transition:opacity .25s ease;
+  }
+
+  #overlay.hidden{
+    opacity:0;
+    pointer-events:none;
+  }
+
+  #overlay h2{
+    font-family:'Fredoka', sans-serif;
+    font-size:clamp(24px,5vw,32px);
+    margin:0 0 4px;
+  }
+
+  #overlay p{
+    margin:0;
+    color:var(--ice-300);
+    font-size:14px;
+  }
+
+  #overlay .start-btn{
+    margin-top:18px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--dusk-900);
+    background:var(--ember-500);
+    border:none;
+    padding:12px 26px;
+    border-radius:100px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+  #overlay .start-btn:hover{ background:var(--ember-600); transform:translateY(-1px); }
+  #overlay .start-btn:active{ transform:translateY(0); }
+
+  footer{
+    width:100%;
+    max-width:760px;
+    padding:16px 20px 60px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    color:var(--ice-300);
+    font-size:13px;
+    position:relative;
+    z-index:1;
+  }
+
+  .keys{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  kbd{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ice-100);
+    background:var(--dusk-700);
+    border:1px solid var(--line);
+    border-bottom-width:2px;
+    padding:4px 8px;
+    border-radius:6px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<header>
+  <div class="eyebrow-row">
+    <h1>Snowman Run<span>.</span></h1>
+    <div class="high-score-chip">Best <span id="bestChip">0</span></div>
+  </div>
+  <p class="tagline">A snowman out for a run. Clear the rocks and pines, duck under the icicles, and see how far he gets.</p>
+</header>
+
+<main>
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="hud">
+      <span class="score">Score <span id="scoreVal">0</span></span>
+      <span class="best">Best <span id="bestVal">0</span></span>
+    </div>
+    <div id="overlay">
+      <h2 id="overlayTitle">Ready to run?</h2>
+      <p id="overlaySub">Space or tap to jump. Down arrow to duck.</p>
+      <button class="start-btn" id="startBtn">Start running</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="keys">
+    <kbd>Space</kbd> / <kbd>↑</kbd> jump &nbsp;·&nbsp; <kbd>↓</kbd> duck &nbsp;·&nbsp; <kbd>R</kbd> restart
+  </div>
+  <div>Works on touch too — tap the top of the game to jump, hold the bottom to duck.</div>
+</footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlaySub = document.getElementById('overlaySub');
+  const startBtn = document.getElementById('startBtn');
+  const scoreVal = document.getElementById('scoreVal');
+  const bestVal = document.getElementById('bestVal');
+  const bestChip = document.getElementById('bestChip');
+
+  // ---- logical resolution (canvas is CSS-scaled to fit the stage) ----
+  const W = 760, H = 380;
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  function fitCanvas(){
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = stage.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr * (rect.width / W), 0, 0, dpr * (rect.width / W), 0, 0);
+  }
+  window.addEventListener('resize', fitCanvas);
+
+  const GROUND_Y = 300;
+  const GRAVITY = 0.9;
+  const JUMP_V = -15.2;
+  const BASE_SPEED = 3.6;
+
+  let best = 0;
+  try { best = parseInt(localStorage.getItem('drift_best') || '0', 10) || 0; } catch(e) { best = 0; }
+  bestVal.textContent = best;
+  bestChip.textContent = best;
+
+  const colors = {
+    skyTop: '#1c3358', skyBottom: '#0c1730',
+    ground: '#12203f', groundLine: '#2c4370',
+    white: '#f5f9ff', outline: '#c9dcef',
+    black: '#182034', gray: '#7f8ba6', darkGray: '#4b5878',
+    green: '#3f8a63', brown: '#8a5a3c', ember: '#ff8c42', icy: '#8fd0ec'
+  };
+
+  class Snowman{
+    constructor(){
+      this.width = 42; this.height = 60;
+      this.x = 80;
+      this.y = GROUND_Y - this.height;
+      this.vy = 0;
+      this.onGround = true;
+      this.ducking = false;
+      this.bob = 0;
+    }
+    rect(){
+      if(this.ducking && this.onGround){
+        const h = 38;
+        return { x:this.x, y:GROUND_Y - h, w:this.width, h };
+      }
+      return { x:this.x, y:this.y, w:this.width, h:this.height };
+    }
+    jump(){
+      if(this.onGround){ this.vy = JUMP_V; this.onGround = false; }
+    }
+    update(duckInput){
+      this.ducking = duckInput && this.onGround;
+      if(!this.onGround){
+        this.vy += GRAVITY;
+        this.y += this.vy;
+        if(this.y >= GROUND_Y - this.height){
+          this.y = GROUND_Y - this.height;
+          this.vy = 0;
+          this.onGround = true;
+        }
+      } else {
+        this.y = GROUND_Y - this.height;
+        this.bob += 0.25;
+      }
+    }
+    draw(){
+      const r = this.rect();
+      const cx = r.x + r.w/2;
+
+      if(this.ducking){
+        const baseY = r.y + r.h;
+        ctx.fillStyle = colors.white;
+        ellipse(cx, baseY-11, r.w/2, 11);
+        ellipse(cx+3, baseY-28, (r.w-12)/2, 10);
+        ctx.fillStyle = colors.black;
+        dot(cx+13, baseY-24, 2);
+        ctx.fillStyle = colors.ember;
+        tri(cx+19,baseY-22, cx+29,baseY-20, cx+19,baseY-18);
+        return;
+      }
+
+      let bob = 0;
+      if(this.onGround) bob = Math.abs(((this.bob % 2) - 1)) * 2;
+      const baseY = r.y + r.h - bob;
+
+      const bottomR = 19, midR = 14.5, headR = 10.5;
+      const bottomCy = baseY - bottomR;
+      const midCy = bottomCy - bottomR - midR + 6;
+      const headCy = midCy - midR - headR + 6;
+
+      ctx.fillStyle = colors.white;
+      circle(cx, bottomCy, bottomR);
+      circle(cx, midCy, midR);
+      circle(cx, headCy, headR);
+
+      ctx.strokeStyle = colors.outline;
+      ctx.lineWidth = 1;
+      circleStroke(cx, bottomCy, bottomR);
+      circleStroke(cx, midCy, midR);
+      circleStroke(cx, headCy, headR);
+
+      ctx.fillStyle = colors.black;
+      [-4,4,12].forEach(dy => dot(cx, midCy-2+dy, 2));
+      dot(cx-4, headCy-2, 2);
+      dot(cx+4, headCy-2, 2);
+
+      ctx.fillStyle = colors.ember;
+      tri(cx+headR-2, headCy, cx+headR+10, headCy+2, cx+headR-2, headCy+4);
+
+      const swing = this.onGround ? 5 : 0;
+      ctx.strokeStyle = colors.brown;
+      ctx.lineWidth = 3;
+      line(cx-midR+3, midCy, cx-midR-7, midCy-8+swing);
+      line(cx+midR-3, midCy, cx+midR+7, midCy-8-swing);
+
+      ctx.fillStyle = colors.darkGray;
+      const hatW = 19;
+      ctx.fillRect(cx-hatW/2, headCy-headR-9, hatW, 7);
+      ctx.fillRect(cx-hatW/2-3, headCy-headR-2, hatW+6, 4);
+    }
+  }
+
+  class Obstacle{
+    constructor(x, kind){
+      this.kind = kind; this.x = x;
+      if(kind === 'rockSmall'){ this.w=24; this.h=24; }
+      else if(kind === 'rockBig'){ this.w=36; this.h=36; }
+      else if(kind === 'tree'){ this.w=28; this.h=52; }
+      else { this.w=20; this.h=38; } // icicle
+      this.y = kind === 'icicle' ? GROUND_Y - 66 : GROUND_Y - this.h;
+    }
+    rect(){ return { x:this.x, y:this.y, w:this.w, h:this.h }; }
+    update(speed){ this.x -= speed; }
+    offscreen(){ return this.x + this.w < 0; }
+    draw(){
+      const r = this.rect();
+      if(this.kind === 'rockSmall' || this.kind === 'rockBig'){
+        ctx.fillStyle = colors.gray;
+        ellipse(r.x+r.w/2, r.y+r.h/2, r.w/2, r.h/2);
+        ctx.strokeStyle = colors.darkGray;
+        ctx.lineWidth = 2;
+        ellipseStroke(r.x+r.w/2, r.y+r.h/2, r.w/2, r.h/2);
+      } else if(this.kind === 'tree'){
+        ctx.fillStyle = colors.brown;
+        ctx.fillRect(r.x+r.w/2-3, r.y+r.h-12, 6, 12);
+        ctx.fillStyle = colors.green;
+        tri(r.x+r.w/2, r.y, r.x, r.y+32, r.x+r.w, r.y+32);
+        tri(r.x+r.w/2, r.y+12, r.x-3, r.y+r.h-12, r.x+r.w+3, r.y+r.h-12);
+      } else {
+        ctx.fillStyle = colors.icy;
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x+r.w, r.y);
+        ctx.lineTo(r.x+r.w/2, r.y+r.h);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  function circle(x,y,rad){ ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fill(); }
+  function circleStroke(x,y,rad){ ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.stroke(); }
+  function ellipse(x,y,rx,ry){ ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill(); }
+  function ellipseStroke(x,y,rx,ry){ ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.stroke(); }
+  function dot(x,y,r){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+  function tri(x1,y1,x2,y2,x3,y3){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fill(); }
+  function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+
+  class Snowflake{
+    constructor(){ this.reset(true); }
+    reset(initial){
+      this.x = Math.random()*W;
+      this.y = initial ? Math.random()*H : -10;
+      this.speed = 0.5 + Math.random()*1.8;
+      this.size = 1 + Math.random()*2.2;
+      this.drift = (Math.random()-0.5)*0.4;
+    }
+    update(){
+      this.y += this.speed;
+      this.x += this.drift;
+      if(this.y > H){ this.reset(false); }
+    }
+    draw(){
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      dot(this.x, this.y, this.size);
+    }
+  }
+
+  let snowman, obstacles, speed, groundOffset, score, running, gameOver, flakes;
+  let nextGapMin = 220, nextGapMax = 380;
+
+  function reset(){
+    snowman = new Snowman();
+    obstacles = [];
+    speed = BASE_SPEED;
+    groundOffset = 0;
+    score = 0;
+    gameOver = false;
+  }
+
+  flakes = Array.from({length:70}, () => new Snowflake());
+  reset();
+  running = false;
+
+  function spawnObstacle(x){
+    const roll = Math.random();
+    let kind;
+    if(roll < 0.30) kind = 'rockSmall';
+    else if(roll < 0.55) kind = 'rockBig';
+    else if(roll < 0.80) kind = 'tree';
+    else kind = 'icicle';
+    return new Obstacle(x, kind);
+  }
+
+  function rectsCollide(a,b){
+    return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+  }
+
+  let duckHeld = false;
+  let jumpTapZoneActive = false;
+
+  function doJump(){
+    if(!running){ startGame(); return; }
+    if(gameOver){ startGame(); return; }
+    snowman.jump();
+  }
+
+  function startGame(){
+    reset();
+    running = true;
+    overlay.classList.add('hidden');
+  }
+
+  function endGame(){
+    gameOver = true;
+    running = false;
+    best = Math.max(best, Math.floor(score));
+    bestVal.textContent = best;
+    bestChip.textContent = best;
+    try { localStorage.setItem('drift_best', String(best)); } catch(e){}
+    overlayTitle.textContent = 'Ran out of road';
+    overlaySub.textContent = `Score ${Math.floor(score)} — space or tap to try again.`;
+    startBtn.textContent = 'Run again';
+    overlay.classList.remove('hidden');
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){
+      e.preventDefault();
+      doJump();
+    } else if(e.code === 'ArrowDown' || e.code === 'KeyS'){
+      duckHeld = true;
+    } else if(e.code === 'KeyR'){
+      startGame();
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if(e.code === 'ArrowDown' || e.code === 'KeyS') duckHeld = false;
+  });
+
+  stage.addEventListener('pointerdown', (e) => {
+    const rect = stage.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+    if(relY > 0.62 && running && !gameOver){
+      duckHeld = true;
+    } else {
+      doJump();
+    }
+  });
+  window.addEventListener('pointerup', () => { duckHeld = false; });
+
+  startBtn.addEventListener('click', startGame);
+
+  function drawSky(){
+    const g = ctx.createLinearGradient(0,0,0,GROUND_Y);
+    g.addColorStop(0, colors.skyTop);
+    g.addColorStop(1, colors.skyBottom);
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,GROUND_Y);
+  }
+
+  function drawGround(offset){
+    ctx.fillStyle = colors.ground;
+    ctx.fillRect(0, GROUND_Y, W, H-GROUND_Y);
+    const dashW=16, gap=12, total=dashW+gap;
+    let start = (-offset) % total; if(start>0) start -= total;
+    ctx.strokeStyle = colors.groundLine;
+    ctx.lineWidth = 3;
+    for(let x=start; x<W; x+=total){
+      line(x, GROUND_Y+4, x+dashW, GROUND_Y+4);
+    }
+  }
+
+  function loop(){
+    if(running && !gameOver){
+      const duckInput = duckHeld;
+      snowman.update(duckInput);
+
+      groundOffset += speed;
+
+      obstacles.forEach(o => o.update(speed));
+      obstacles = obstacles.filter(o => !o.offscreen());
+
+      const last = obstacles[obstacles.length-1];
+      if(!last || (W - last.x) > (nextGapMin + Math.random()*(nextGapMax-nextGapMin))){
+        obstacles.push(spawnObstacle(W+20));
+      }
+
+      const sRect = snowman.rect();
+      for(const o of obstacles){
+        if(rectsCollide({x:sRect.x,y:sRect.y,w:sRect.w,h:sRect.h}, o.rect())){
+          endGame();
+          break;
+        }
+      }
+
+      score += speed * 0.05;
+      scoreVal.textContent = Math.floor(score);
+    }
+
+    flakes.forEach(f => f.update());
+
+    drawSky();
+    flakes.forEach(f => f.draw());
+    drawGround(groundOffset);
+    obstacles.forEach(o => o.draw());
+    snowman.draw();
+
+    requestAnimationFrame(loop);
+  }
+
+  fitCanvas();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
